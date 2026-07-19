@@ -22,21 +22,20 @@ class ExercisesScreen extends StatelessWidget {
         title: 'Respirație calmă',
         description:
             'Stai confortabil pe un scaun și respiră lent, fără să forțezi.',
-        duration: '2 minute',
+        duration: '20 de secunde',
         icon: Icons.air,
       ),
       const ExerciseRecommendation(
         title: 'Rotiri ușoare ale umerilor',
-        description:
-            'Execută mișcări lente ale umerilor, fără mișcări bruște.',
-        duration: '1 minut',
+        description: 'Execută mișcări lente ale umerilor, fără mișcări bruște.',
+        duration: '15 secunde',
         icon: Icons.accessibility_new,
       ),
       const ExerciseRecommendation(
         title: 'Mobilizarea gleznelor din șezut',
         description:
             'Ridică ușor vârfurile și călcâiele alternativ, stând pe scaun.',
-        duration: '2 minute',
+        duration: '20 de secunde',
         icon: Icons.airline_seat_recline_normal,
       ),
     ];
@@ -47,7 +46,7 @@ class ExercisesScreen extends StatelessWidget {
           title: 'Mers lent pe loc cu sprijin',
           description:
               'Mergi lent pe loc lângă un scaun stabil, pe care îl poți folosi pentru sprijin.',
-          duration: '2 minute',
+          duration: '30 de secunde',
           icon: Icons.directions_walk,
         ),
       );
@@ -59,7 +58,7 @@ class ExercisesScreen extends StatelessWidget {
           title: 'Extensia piciorului din șezut',
           description:
               'Îndreaptă ușor câte un picior, numai în limita confortului.',
-          duration: '6 repetări pe fiecare parte',
+          duration: '20 de secunde sau maximum 6 repetări pe fiecare parte',
           icon: Icons.event_seat,
         ),
       );
@@ -69,7 +68,7 @@ class ExercisesScreen extends StatelessWidget {
           title: 'Ridicări ușoare de pe scaun',
           description:
               'Ridică-te lent de pe un scaun stabil și așază-te controlat.',
-          duration: '5 repetări',
+          duration: '20 de secunde sau maximum 5 repetări',
           icon: Icons.chair_alt,
         ),
       );
@@ -98,14 +97,21 @@ class ExercisesScreen extends StatelessWidget {
     return 'Începe lent și păstrează un ritm confortabil.';
   }
 
+  String _buildEstimatedDuration(List<ExerciseRecommendation> recommendations) {
+    if (recommendations.length <= 4) {
+      return 'aproximativ 2 minute';
+    }
+
+    return 'aproximativ 2–3 minute';
+  }
+
   @override
   Widget build(BuildContext context) {
     final recommendations = _buildRecommendations();
+    final estimatedDuration = _buildEstimatedDuration(recommendations);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Exerciții recomandate'),
-      ),
+      appBar: AppBar(title: const Text('Exerciții recomandate')),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -124,10 +130,7 @@ class ExercisesScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       _buildSafetyMessage(),
-                      style: const TextStyle(
-                        fontSize: 17,
-                        height: 1.4,
-                      ),
+                      style: const TextStyle(fontSize: 17, height: 1.4),
                     ),
                   ),
                 ],
@@ -136,15 +139,41 @@ class ExercisesScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const Text(
               'Plan introductiv',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
               'Exerciții generale, cu intensitate redusă.',
               style: TextStyle(fontSize: 17),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.schedule_outlined,
+                      size: 30,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Durata totală estimată a antrenamentului: '
+                        '$estimatedDuration, inclusiv pauzele dintre '
+                        'exerciții.',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             ...recommendations.map(
@@ -183,12 +212,11 @@ class ExercisesScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 10),
                               Text(
-                                exercise.duration,
+                                'Durată ghidată: ${exercise.duration}',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color:
-                                      Theme.of(context).colorScheme.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                             ],
@@ -205,19 +233,15 @@ class ExercisesScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute<void>(
-                    builder: (context) => WorkoutScreen(
-                      exercises: recommendations,
-                    ),
+                    builder: (context) =>
+                        WorkoutScreen(exercises: recommendations),
                   ),
                 );
               },
               icon: const Icon(Icons.play_arrow),
               label: const Padding(
                 padding: EdgeInsets.symmetric(vertical: 14),
-                child: Text(
-                  'Începe planul',
-                  style: TextStyle(fontSize: 18),
-                ),
+                child: Text('Începe planul', style: TextStyle(fontSize: 18)),
               ),
             ),
           ],

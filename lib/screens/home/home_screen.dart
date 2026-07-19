@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/health_storage_service.dart';
 import '../../services/profile_storage_service.dart';
@@ -15,14 +16,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ProfileStorageService _profileStorageService =
-      ProfileStorageService();
+  final ProfileStorageService _profileStorageService = ProfileStorageService();
 
-  final HealthStorageService _healthStorageService =
-      HealthStorageService();
+  final HealthStorageService _healthStorageService = HealthStorageService();
 
-  final WorkoutHistoryService _workoutHistoryService =
-      WorkoutHistoryService();
+  final WorkoutHistoryService _workoutHistoryService = WorkoutHistoryService();
 
   UserProfile? _profile;
   HealthAssessment? _healthAssessment;
@@ -51,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _profile = results[0] as UserProfile?;
-        _healthAssessment = results[1] as HealthAssessment;
+        _healthAssessment = results[1] as HealthAssessment?;
         _workoutSessions = results[2] as List<WorkoutSession>;
         _isLoading = false;
       });
@@ -66,9 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Datele aplicației nu au putut fi încărcate.',
-          ),
+          content: Text('Datele aplicației nu au putut fi încărcate.'),
         ),
       );
     }
@@ -76,20 +72,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _openProfile() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => const ProfileScreen(),
-      ),
+      MaterialPageRoute<void>(builder: (context) => const ProfileScreen()),
     );
 
     await _loadDashboardData();
   }
 
   Future<void> _openHealthAssessment() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (context) => const HealthScreen(),
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (context) => const HealthScreen()));
 
     await _loadDashboardData();
   }
@@ -114,18 +106,78 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  String _encodeQueryParameters(Map<String, String> parameters) {
+    return parameters.entries
+        .map(
+          (entry) =>
+              '${Uri.encodeComponent(entry.key)}='
+              '${Uri.encodeComponent(entry.value)}',
+        )
+        .join('&');
+  }
+
+  Future<void> _sendFeedback() async {
+    final emailUri = Uri(
+      scheme: 'mailto',
+      path: 'care.app.feedback@gmail.com',
+      query: _encodeQueryParameters({
+        'subject': 'Feedback aplicația CARE',
+        'body': '''
+Bună,
+
+Am testat aplicația CARE.
+
+1. Ce mi-a plăcut?
+
+
+2. Ce mi s-a părut neclar sau dificil?
+
+
+3. Am reușit să finalizez un antrenament?
+
+
+4. Ce aș îmbunătăți?
+
+
+Versiunea aplicației: 1.0.0
+''',
+      }),
+    );
+
+    try {
+      final wasOpened = await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!wasOpened && mounted) {
+        _showFeedbackError();
+      }
+    } catch (_) {
+      if (mounted) {
+        _showFeedbackError();
+      }
+    }
+  }
+
+  void _showFeedbackError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Nu am găsit o aplicație de email. '
+          'Poți trimite feedback la care.app.feedback@gmail.com.',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('CARE'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('CARE'), centerTitle: true),
       body: SafeArea(
         child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
+            ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
                 onRefresh: _loadDashboardData,
                 child: ListView(
@@ -158,30 +210,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Column(
       children: [
-        const Icon(
-          Icons.favorite,
-          color: Colors.red,
-          size: 72,
-        ),
+        const Icon(Icons.favorite, color: Colors.red, size: 72),
         const SizedBox(height: 18),
         Text(
           name != null && name.isNotEmpty
               ? 'Bun venit, $name!'
               : 'Bine ai venit!',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
         const Text(
           'Mișcare sigură și adaptată pentru persoane 50+',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 18,
-            height: 1.4,
-          ),
+          style: TextStyle(fontSize: 18, height: 1.4),
         ),
       ],
     );
@@ -190,8 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProfileSummary() {
     final profile = _profile!;
     final bmi = profile.bmi;
-    final difference =
-        profile.weightKg - profile.targetWeightKg;
+    final difference = profile.weightKg - profile.targetWeightKg;
 
     return Card(
       child: Padding(
@@ -209,10 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Expanded(
                   child: Text(
                     'Rezumatul tău',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -226,8 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             _DashboardValueRow(
               label: 'Greutate-țintă',
-              value:
-                  '${profile.targetWeightKg.toStringAsFixed(1)} kg',
+              value: '${profile.targetWeightKg.toStringAsFixed(1)} kg',
               icon: Icons.flag_outlined,
             ),
             if (bmi != null) ...[
@@ -252,10 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
               difference > 0
                   ? 'Mai ai ${difference.toStringAsFixed(1)} kg până la țintă.'
                   : 'Ținta ta a fost atinsă sau depășită.',
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             Align(
@@ -289,19 +323,13 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
               const Text(
                 'Profil de siguranță',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               const Text(
                 'Completează evaluarea pentru a primi un program adaptat.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  height: 1.4,
-                ),
+                style: TextStyle(fontSize: 17, height: 1.4),
               ),
               const SizedBox(height: 16),
               FilledButton.icon(
@@ -333,10 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Expanded(
                   child: Text(
                     'Profil de siguranță',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -345,10 +370,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (conditions.isEmpty)
               const Text(
                 'Nu au fost raportate limitări în evaluare.',
-                style: TextStyle(
-                  fontSize: 17,
-                  height: 1.4,
-                ),
+                style: TextStyle(fontSize: 17, height: 1.4),
               )
             else
               ...conditions.map(
@@ -359,8 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         Icons.check_circle_outline,
                         size: 22,
-                        color:
-                            Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -378,9 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .secondaryContainer,
+                color: Theme.of(context).colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(
@@ -406,9 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<String> _buildConditionLabels(
-    HealthAssessment assessment,
-  ) {
+  List<String> _buildConditionLabels(HealthAssessment assessment) {
     final conditions = <String>[];
 
     if (assessment.hasHeartProblems) {
@@ -430,16 +447,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return conditions;
   }
 
-  String _buildProgramLevel(
-    HealthAssessment assessment,
-  ) {
-    if (assessment.hasHeartProblems ||
-        assessment.hasBalanceProblems) {
+  String _buildProgramLevel(HealthAssessment assessment) {
+    if (assessment.hasHeartProblems || assessment.hasBalanceProblems) {
       return 'intensitate foarte redusă, cu sprijin';
     }
 
-    if (assessment.hasHypertension ||
-        assessment.hasKneePain) {
+    if (assessment.hasHypertension || assessment.hasKneePain) {
       return 'intensitate redusă';
     }
 
@@ -460,19 +473,13 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 14),
             const Text(
               'Completează profilul',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             const Text(
               'Adaugă numele, vârsta, greutatea și obiectivul tău.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 17,
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 17, height: 1.4),
             ),
             const SizedBox(height: 18),
             FilledButton.icon(
@@ -486,141 +493,125 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-Widget _buildProgressCard() {
-  final completedWorkouts = _workoutSessions.length;
+  Widget _buildProgressCard() {
+    final completedWorkouts = _workoutSessions.length;
 
-  final totalSeconds = _workoutSessions.fold<int>(
-    0,
-    (total, session) => total + session.durationSeconds,
-  );
+    final totalSeconds = _workoutSessions.fold<int>(
+      0,
+      (total, session) => total + session.durationSeconds,
+    );
 
-  final totalExercises = _workoutSessions.fold<int>(
-    0,
-    (total, session) => total + session.exerciseCount,
-  );
+    final totalExercises = _workoutSessions.fold<int>(
+      0,
+      (total, session) => total + session.exerciseCount,
+    );
 
-  final lastSession =
-      _workoutSessions.isEmpty ? null : _workoutSessions.first;
+    final lastSession = _workoutSessions.isEmpty
+        ? null
+        : _workoutSessions.first;
 
-  return Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.trending_up,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Progresul meu',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.trending_up,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Progresul meu',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            if (_workoutSessions.isEmpty) ...[
+              const Text(
+                'Nu ai încă antrenamente finalizate.',
+                style: TextStyle(fontSize: 17, height: 1.4),
               ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          if (_workoutSessions.isEmpty) ...[
-            const Text(
-              'Nu ai încă antrenamente finalizate.',
-              style: TextStyle(
-                fontSize: 17,
-                height: 1.4,
+              const SizedBox(height: 8),
+              const Text(
+                'Finalizează primul program pentru a vedea progresul aici.',
+                style: TextStyle(fontSize: 15, height: 1.4),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Finalizează primul program pentru a vedea progresul aici.',
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.4,
+            ] else ...[
+              _ProgressValueRow(
+                icon: Icons.check_circle_outline,
+                label: 'Antrenamente finalizate',
+                value: completedWorkouts.toString(),
               ),
-            ),
-          ] else ...[
-            _ProgressValueRow(
-              icon: Icons.check_circle_outline,
-              label: 'Antrenamente finalizate',
-              value: completedWorkouts.toString(),
-            ),
-            const SizedBox(height: 12),
-            _ProgressValueRow(
-              icon: Icons.timer_outlined,
-              label: 'Timp total activ',
-              value: _formatTotalDuration(totalSeconds),
-            ),
-            const SizedBox(height: 12),
-            _ProgressValueRow(
-              icon: Icons.fitness_center_outlined,
-              label: 'Exerciții efectuate',
-              value: totalExercises.toString(),
-            ),
-            if (lastSession != null) ...[
               const SizedBox(height: 12),
               _ProgressValueRow(
-                icon: Icons.calendar_today_outlined,
-                label: 'Ultimul antrenament',
-                value: _formatWorkoutDate(lastSession.completedAt),
+                icon: Icons.timer_outlined,
+                label: 'Timp total activ',
+                value: _formatTotalDuration(totalSeconds),
               ),
+              const SizedBox(height: 12),
+              _ProgressValueRow(
+                icon: Icons.fitness_center_outlined,
+                label: 'Exerciții efectuate',
+                value: totalExercises.toString(),
+              ),
+              if (lastSession != null) ...[
+                const SizedBox(height: 12),
+                _ProgressValueRow(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Ultimul antrenament',
+                  value: _formatWorkoutDate(lastSession.completedAt),
+                ),
+              ],
             ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
-}
-
-String _formatTotalDuration(int totalSeconds) {
-  final hours = totalSeconds ~/ 3600;
-  final minutes = (totalSeconds % 3600) ~/ 60;
-  final seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return '${hours}h ${minutes}min';
+    );
   }
 
-  if (minutes > 0) {
-    return '${minutes}min ${seconds}s';
+  String _formatTotalDuration(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}min';
+    }
+
+    if (minutes > 0) {
+      return '${minutes}min ${seconds}s';
+    }
+
+    return '${seconds}s';
   }
 
-  return '${seconds}s';
-}
+  String _formatWorkoutDate(DateTime date) {
+    final now = DateTime.now();
 
-String _formatWorkoutDate(DateTime date) {
-  final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
-  final today = DateTime(
-    now.year,
-    now.month,
-    now.day,
-  );
+    final workoutDay = DateTime(date.year, date.month, date.day);
 
-  final workoutDay = DateTime(
-    date.year,
-    date.month,
-    date.day,
-  );
+    final difference = today.difference(workoutDay).inDays;
 
-  final difference = today.difference(workoutDay).inDays;
+    if (difference == 0) {
+      return 'Astăzi';
+    }
 
-  if (difference == 0) {
-    return 'Astăzi';
+    if (difference == 1) {
+      return 'Ieri';
+    }
+
+    return '${date.day.toString().padLeft(2, '0')}.'
+        '${date.month.toString().padLeft(2, '0')}.'
+        '${date.year}';
   }
-
-  if (difference == 1) {
-    return 'Ieri';
-  }
-
-  return '${date.day.toString().padLeft(2, '0')}.'
-      '${date.month.toString().padLeft(2, '0')}.'
-      '${date.year}';
-}
 
   Widget _buildActionsSection() {
     return Column(
@@ -628,10 +619,7 @@ String _formatWorkoutDate(DateTime date) {
       children: [
         const Text(
           'Planul tău',
-          style: TextStyle(
-            fontSize: 23,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -656,10 +644,7 @@ String _formatWorkoutDate(DateTime date) {
             icon: const Icon(Icons.favorite_outline),
             label: const Padding(
               padding: EdgeInsets.symmetric(vertical: 13),
-              child: Text(
-                'Evaluare sănătate',
-                style: TextStyle(fontSize: 18),
-              ),
+              child: Text('Evaluare sănătate', style: TextStyle(fontSize: 18)),
             ),
           ),
         ),
@@ -671,10 +656,20 @@ String _formatWorkoutDate(DateTime date) {
             icon: const Icon(Icons.person_outline),
             label: const Padding(
               padding: EdgeInsets.symmetric(vertical: 13),
-              child: Text(
-                'Profilul meu',
-                style: TextStyle(fontSize: 18),
-              ),
+              child: Text('Profilul meu', style: TextStyle(fontSize: 18)),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _sendFeedback,
+            icon: const Icon(Icons.feedback_outlined),
+            label: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 13),
+              child: Text('Trimite feedback', style: TextStyle(fontSize: 18)),
             ),
           ),
         ),
@@ -695,10 +690,7 @@ String _formatWorkoutDate(DateTime date) {
               child: Text(
                 'CARE oferă recomandări generale și nu înlocuiește '
                 'evaluarea sau indicațiile medicului.',
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.4,
-                ),
+                style: TextStyle(fontSize: 16, height: 1.4),
               ),
             ),
           ],
@@ -723,24 +715,12 @@ class _DashboardValueRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 26,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(icon, size: 26, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 17),
-          ),
-        ),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 17))),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -762,25 +742,13 @@ class _ProgressValueRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 26,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        Icon(icon, size: 26, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 17),
-          ),
-        ),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 17))),
         Text(
           value,
           textAlign: TextAlign.right,
-          style: const TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
         ),
       ],
     );

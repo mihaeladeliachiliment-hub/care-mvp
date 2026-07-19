@@ -5,17 +5,10 @@ import 'package:flutter/material.dart';
 import '../../services/workout_history_service.dart';
 import '../exercises/exercises_screen.dart';
 
-enum WorkoutPhase {
-  exercise,
-  rest,
-  finished,
-}
+enum WorkoutPhase { exercise, rest, finished }
 
 class WorkoutScreen extends StatefulWidget {
-  const WorkoutScreen({
-    required this.exercises,
-    super.key,
-  });
+  const WorkoutScreen({required this.exercises, super.key});
 
   final List<ExerciseRecommendation> exercises;
 
@@ -26,8 +19,7 @@ class WorkoutScreen extends StatefulWidget {
 class _WorkoutScreenState extends State<WorkoutScreen> {
   static const int restDurationSeconds = 10;
 
-  final WorkoutHistoryService _historyService =
-      WorkoutHistoryService();
+  final WorkoutHistoryService _historyService = WorkoutHistoryService();
 
   Timer? _timer;
 
@@ -50,7 +42,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   int get _exerciseDurationSeconds {
     final title = _currentExercise.title.toLowerCase();
 
-    // Duratele scurte sunt păstrate momentan pentru testarea MVP.
+    // Short durations are currently kept for MVP testing.
     if (title.contains('respirație')) {
       return 20;
     }
@@ -93,29 +85,26 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
     _timer?.cancel();
 
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-      (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-
-        setState(() {
-          _elapsedSeconds++;
-        });
-
-        if (_remainingSeconds > 1) {
-          setState(() {
-            _remainingSeconds--;
-          });
-          return;
-        }
-
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
         timer.cancel();
-        _handlePhaseCompletion();
-      },
-    );
+        return;
+      }
+
+      setState(() {
+        _elapsedSeconds++;
+      });
+
+      if (_remainingSeconds > 1) {
+        setState(() {
+          _remainingSeconds--;
+        });
+        return;
+      }
+
+      timer.cancel();
+      _handlePhaseCompletion();
+    });
   }
 
   void _pauseTimer() {
@@ -223,10 +212,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Oprești antrenamentul?'),
+          icon: Icon(
+            Icons.stop_circle_outlined,
+            size: 52,
+            color: Theme.of(dialogContext).colorScheme.error,
+          ),
+          title: const Text(
+            'Oprești antrenamentul?',
+            textAlign: TextAlign.center,
+          ),
           content: const Text(
             'Este în regulă să te oprești. Siguranța și starea ta de bine '
-            'sunt mai importante decât finalizarea planului.',
+            'sunt mai importante decât finalizarea planului.\n\n'
+            'Dacă revii la antrenament, cronometrul va rămâne în pauză '
+            'până când apeși din nou „Pornește”.',
+            style: TextStyle(fontSize: 17, height: 1.45),
           ),
           actions: [
             TextButton(
@@ -236,6 +236,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               child: const Text('Revin la antrenament'),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+              ),
               onPressed: () {
                 Navigator.of(dialogContext).pop(true);
               },
@@ -256,7 +260,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Future<void> _showSafetyDialog() async {
     _pauseTimer();
 
-    final leaveWorkout = await showDialog<bool>(
+    final shouldEndWorkout = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
@@ -266,23 +270,28 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             size: 52,
             color: Theme.of(dialogContext).colorScheme.error,
           ),
-          title: const Text(
-            'Oprește exercițiul',
-            textAlign: TextAlign.center,
-          ),
+          title: const Text('Cum te simți?', textAlign: TextAlign.center),
           content: const Text(
-            'Așază-te sau întinde-te într-o poziție sigură și nu relua '
-            'antrenamentul.\n\n'
+            'Antrenamentul a fost pus pe pauză.\n\n'
+            'Așază-te sau întinde-te într-o poziție sigură și continuă numai '
+            'dacă simptomele au dispărut complet și te simți pregătit.\n\n'
             'Dacă ai durere sau presiune în piept, dificultăți importante '
-            'de respirație, amețeală puternică, leșin ori simptome severe, '
-            'solicită imediat ajutor medical.',
-            style: TextStyle(
-              fontSize: 17,
-              height: 1.45,
-            ),
+            'de respirație, amețeală puternică, leșin ori alte simptome '
+            'severe, încheie antrenamentul și solicită imediat ajutor medical.',
+            style: TextStyle(fontSize: 17, height: 1.45),
           ),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false);
+              },
+              child: const Text('Revin la antrenament'),
+            ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+              ),
               onPressed: () {
                 Navigator.of(dialogContext).pop(true);
               },
@@ -293,13 +302,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       },
     );
 
-    if (!mounted || leaveWorkout != true) {
+    if (!mounted) {
       return;
     }
 
-    Navigator.of(context).popUntil(
-      (route) => route.isFirst,
-    );
+    if (shouldEndWorkout == true) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
   }
 
   String _formatTime(int seconds) {
@@ -341,21 +350,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       return _buildFinishedScreen(context);
     }
 
-    final progress =
-        (_currentExerciseIndex + 1) / widget.exercises.length;
+    final progress = (_currentExerciseIndex + 1) / widget.exercises.length;
 
     final isResting = _phase == WorkoutPhase.rest;
+    final errorColor = Theme.of(context).colorScheme.error;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          isResting ? 'Pauză de recuperare' : 'Antrenament ghidat',
-        ),
+        title: Text(isResting ? 'Pauză de recuperare' : 'Antrenament ghidat'),
         actions: [
-          IconButton(
-            tooltip: 'Oprește antrenamentul',
-            onPressed: _showStopWorkoutDialog,
-            icon: const Icon(Icons.stop_circle_outlined),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton.icon(
+              onPressed: _showStopWorkoutDialog,
+              icon: Icon(Icons.stop_circle_outlined, color: errorColor),
+              label: Text(
+                'STOP',
+                style: TextStyle(
+                  color: errorColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -366,10 +383,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Text(
               'Exercițiul ${_currentExerciseIndex + 1} din '
               '${widget.exercises.length}',
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             LinearProgressIndicator(
@@ -387,24 +401,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Text(
               _phaseTitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 14),
             Text(
               _phaseDescription,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                height: 1.5,
-              ),
+              style: const TextStyle(fontSize: 18, height: 1.5),
             ),
             if (!isResting) ...[
               const SizedBox(height: 14),
               Text(
-                'Recomandare: ${_currentExercise.duration}',
+                'Durată ghidată: ${_currentExercise.duration}',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 17,
@@ -417,17 +425,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Text(
               _formatTime(_remainingSeconds),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 54,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 54, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 28),
             FilledButton.icon(
               onPressed: _isRunning ? _pauseTimer : _startTimer,
-              icon: Icon(
-                _isRunning ? Icons.pause : Icons.play_arrow,
-              ),
+              icon: Icon(_isRunning ? Icons.pause : Icons.play_arrow),
               label: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Text(
@@ -439,9 +442,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: _skipCurrentPhase,
-              icon: Icon(
-                isResting ? Icons.skip_next : Icons.fast_forward,
-              ),
+              icon: Icon(isResting ? Icons.skip_next : Icons.fast_forward),
               label: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text(
@@ -455,22 +456,34 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             const SizedBox(height: 18),
             SizedBox(
               width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: errorColor,
+                  side: BorderSide(color: errorColor, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+                onPressed: _showStopWorkoutDialog,
+                icon: const Icon(Icons.stop_circle_outlined),
+                label: const Text(
+                  'Oprește antrenamentul',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.error,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onError,
+                  backgroundColor: errorColor,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 onPressed: _showSafetyDialog,
                 icon: const Icon(Icons.sos),
                 label: const Text(
                   'Mă simt rău',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -488,10 +501,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         'Nu continua prin durere, amețeală sau dificultăți '
                         'neobișnuite de respirație. Odihna face parte din '
                         'progres.',
-                        style: TextStyle(
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
+                        style: TextStyle(fontSize: 16, height: 1.4),
                       ),
                     ),
                   ],
@@ -506,9 +516,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Widget _buildFinishedScreen(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Antrenament finalizat'),
-      ),
+      appBar: AppBar(title: const Text('Antrenament finalizat')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -524,20 +532,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 const SizedBox(height: 24),
                 const Text(
                   'Felicitări!',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Ai terminat planul introductiv. Chiar și câteva minute '
                   'de mișcare contează.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 18, height: 1.4),
                 ),
                 const SizedBox(height: 18),
                 Text(
@@ -559,9 +561,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                     children: [
                       SizedBox.square(
                         dimension: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                        ),
+                        child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                       SizedBox(width: 10),
                       Text('Se salvează progresul...'),
@@ -581,15 +581,12 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   onPressed: _isSavingHistory
                       ? null
                       : () {
-                          Navigator.of(context).popUntil(
-                            (route) => route.isFirst,
-                          );
+                          Navigator.of(
+                            context,
+                          ).popUntil((route) => route.isFirst);
                         },
                   child: const Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                     child: Text(
                       'Înapoi la pagina principală',
                       style: TextStyle(fontSize: 17),
