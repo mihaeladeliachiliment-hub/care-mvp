@@ -8,6 +8,10 @@ Formatul este inspirat de principiile Keep a Changelog, iar versiunile respectă
 
 ## [Unreleased]
 
+### Teste
+
+- Teste automate pentru istoricul antrenamentelor: salvare, încărcare, ordonare, fără dubluri, limită de 100, ștergere și date corupte.
+
 ### Eliminat
 
 - Proiectul Flutter duplicat din subfolderul `care/` (PR #1).
