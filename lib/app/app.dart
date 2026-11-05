@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/home/home_screen.dart';
+import 'app_theme.dart';
 
 class CareApp extends StatelessWidget {
   const CareApp({super.key});
@@ -9,10 +10,9 @@ class CareApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'CARE',
-      theme: ThemeData(
-        colorSchemeSeed: Colors.teal,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: const HomeScreen(),
     );
   }

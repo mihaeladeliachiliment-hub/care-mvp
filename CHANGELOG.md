@@ -8,6 +8,10 @@ Formatul este inspirat de principiile Keep a Changelog, iar versiunile respectă
 
 ## [Unreleased]
 
+### Adăugat
+
+- Mod întunecat: aplicația urmează automat setarea telefonului (luminos / întunecat).
+
 ### Teste
 
 - Teste automate pentru istoricul antrenamentelor: salvare, încărcare, ordonare, fără dubluri, limită de 100, ștergere și date corupte.
@@ -24,7 +28,6 @@ Formatul este inspirat de principiile Keep a Changelog, iar versiunile respectă
 
 ### Planificat
 
-- Mod întunecat (Dark Mode).
 - Îmbunătățiri suplimentare de accesibilitate.
 - Noi planuri de exerciții adaptate.
 - Statistici mai detaliate despre progres.
