@@ -8,6 +8,16 @@ Formatul este inspirat de principiile Keep a Changelog, iar versiunile respectă
 
 ## [Unreleased]
 
+### Eliminat
+
+- Proiectul Flutter duplicat din subfolderul `care/` (PR #1).
+
+### Modificat
+
+- `README.md` descrie acum aplicația CARE, structura proiectului și pașii de rulare.
+- Descrierea din `pubspec.yaml` a fost actualizată.
+- Versiunea din `pubspec.yaml` a fost aliniată cu ultima versiune publicată (`1.1.0+2`).
+
 ### Planificat
 
 - Mod întunecat (Dark Mode).
